@@ -1,0 +1,235 @@
+Since the numeric capabilities built in are lacking, this file defines a bunch of math functions.
+
+G'DAY MATE!
+
+I RECKON NaN = 0 / 0;
+I RECKON inf = 1 / 0;
+I RECKON e = 2.71828182845904524;
+I RECKON pi = 3.14159265358979324;
+I RECKON epsilon = 0.0000001; // Changing this value changes the precision of some of the functions below
+
+THE HARD YAKKA FOR max IS (x, y) <
+    YA RECKON y > x ? <
+        BAIL y;
+    >
+    BAIL x;
+>
+
+THE HARD YAKKA FOR isNaN IS (x) <
+    // contrary to the standard, inf != inf
+    BAIL x != x && "" + x == "NaN";
+>
+
+THE HARD YAKKA FOR abs IS (x) <
+    YA RECKON x < 0 ? <
+        BAIL -x;
+    >
+    BAIL x;
+>
+
+THE HARD YAKKA FOR isAlmostZero IS (x) <
+    BAIL abs(x) < epsilon;
+>
+
+THE HARD YAKKA FOR isFinite IS (x) <
+    BAIL x == x;
+>
+
+THE HARD YAKKA FOR fractionPart IS (x) <
+    YA RECKON !isFinite(x) ? <
+        BAIL NaN;
+    >
+    BAIL x % 1;
+>
+
+THE HARD YAKKA FOR isInteger IS (x) <
+    BAIL fractionPart(x) == 0;
+>
+
+THE HARD YAKKA FOR isOdd IS (x) <
+    BAIL isInteger(x) && abs(x) % 2 == 1;
+>
+
+THE HARD YAKKA FOR floor IS (x) <
+    YA RECKON !isFinite(x) || isInteger(x) ? <
+        BAIL x;
+    > WHATABOUT x < 0 ? <
+        BAIL x - fractionPart(x) - 1;
+    >
+    BAIL x - fractionPart(x);
+>
+
+THE HARD YAKKA FOR ceil IS (x) <
+    YA RECKON isInteger(x) ? <
+        BAIL x;
+    >
+    BAIL floor(x) + 1;
+>
+
+// Round to the nearest integer
+THE HARD YAKKA FOR roundToInt IS (x) <
+    BAIL floor(x + 0.5);
+>
+
+// Round to the nearest multiple of y
+THE HARD YAKKA FOR roundToMultiple IS (x, y) <
+    BAIL roundToInt(x / y) * y;
+>
+
+// Computes the sum from i=start to inf of func(i), stopping when func(i) is small (magnitude < epsilon) or nonfinite.
+THE HARD YAKKA FOR sum IS (func, start) <
+    I RECKON sum = 0;
+    I RECKON i IS A WALKABOUT FROM [start TO inf) <
+        I RECKON diff = func(i);
+        sum = sum + diff;
+        YA RECKON isAlmostZero(diff) || !isFinite(diff) ? <
+            MATE FUCK THIS;
+        >
+    >
+    BAIL sum;
+>
+
+// y must be a nonnegative integer
+THE HARD YAKKA FOR intPow IS (x, y) <
+    YA RECKON y == 0 ? <
+        BAIL 1;
+    >
+    I RECKON retval = 1;
+    I RECKON _ IS A WALKABOUT FROM [0 TO y) <
+        retval = retval * x;
+    >
+    BAIL retval;
+>
+
+// can't compute fractional values (yet)
+THE HARD YAKKA FOR factorial IS (x) <
+    YA RECKON x == 0 ? <
+        BAIL 1;
+    > WHATABOUT isInteger(x) ? <
+        BAIL x * factorial(x - 1);
+    >
+    BAIL NaN;
+>
+
+// Uses the taylor series
+THE HARD YAKKA FOR exp IS (x) <
+    YA RECKON !isFinite(x) ? <
+        YA RECKON x < 0 ? <
+            BAIL 0;
+        >
+        BAIL x;
+    >
+    THE HARD YAKKA FOR sumTerm IS (i) <
+        BAIL intPow(x, i) / factorial(i);
+    >
+    BAIL sum(sumTerm, 0);
+>
+
+THE HARD YAKKA FOR log IS (x) <
+    YA RECKON x < 0 ? <
+        BAIL NaN;
+    > WHATABOUT x == 0 ? <
+        BAIL -inf;
+    > WHATABOUT x == 1 ? <
+        BAIL 0;
+    > WHATABOUT !isFinite(x) ? <
+        BAIL x;
+    > WHATABOUT x > 1 ? <
+        BAIL log(x / e) + 1;
+    > WHATABOUT ? <
+        THE HARD YAKKA FOR sumTerm IS (i) <
+            BAIL intPow(1 - x, i) / i;
+        >
+        BAIL -sum(sumTerm, 1);
+    >
+>
+
+THE HARD YAKKA FOR pow IS (x, y) <
+    YA RECKON isNaN(x) || isNaN(y) ? <
+        BAIL NaN;
+    > WHATABOUT y == 0 ? <
+        BAIL 1;
+    > WHATABOUT y == 1 ? <
+        BAIL x;
+    > WHATABOUT x == 0 ? <
+        YA RECKON y < 0 ? <
+            BAIL inf;
+        >
+        BAIL 0;
+    > WHATABOUT x == 1 ? <
+        YA RECKON isFinite(y) ? <
+            BAIL 1;
+        >
+        BAIL NaN;
+    > WHATABOUT !isFinite(y) ? <
+        YA RECKON y < 0 ? <
+            BAIL 0;
+        >
+        BAIL inf;
+    > WHATABOUT !isFinite(x) ? <
+        YA RECKON x < 0 ? <
+            YA RECKON isOdd(y) ? <
+                YA RECKON y < 0 ? <
+                    BAIL -0;
+                >
+                BAIL x;
+            > WHATABOUT y < 0 ? <
+                BAIL 0;
+            >
+            BAIL inf;
+        > WHATABOUT y < 0 ? <
+            BAIL 0;
+        >
+        BAIL x;
+    > WHATABOUT y < 0 ? <
+        BAIL 1 / pow(x, -y);
+    > WHATABOUT isInteger(y) ? <
+        BAIL intPow(x, y);
+    > WHATABOUT x < 0 ? <
+        GIMME "pow(" + x + ", " + y + ") May be computable, but may not be. Returning NaN.";
+        BAIL NaN;
+    >
+    BAIL exp(y * log(x));
+>
+
+THE HARD YAKKA FOR sqrt IS (x) <
+    YA RECKON x == 0 ? <
+        // includes -0
+        BAIL x;
+    >
+    BAIL pow(x, 0.5);
+>
+
+THE HARD YAKKA FOR sin IS (x) <
+    YA RECKON x < 0 ? <
+        BAIL -sin(-x);
+    > WHATABOUT x % (2 * pi) > pi ? <
+        BAIL -sin(x % pi);
+    >
+    THE HARD YAKKA FOR sumTerm IS (i) <
+        YA RECKON isOdd(i) ? <
+            BAIL -intPow(x, 2 * i + 1) / factorial(2 * i + 1);
+        >
+        BAIL intPow(x, 2 * i + 1) / factorial(2 * i + 1);
+    >
+    BAIL sum(sumTerm, 0);
+>
+
+THE HARD YAKKA FOR cos IS (x) <
+    YA RECKON x < 0 ? <
+        BAIL cos(-x);
+    > WHATABOUT x % (2 * pi) > pi ? <
+        BAIL -cos(x % pi);
+    >
+    THE HARD YAKKA FOR sumTerm IS (i) <
+        YA RECKON isOdd(i) ? <
+            BAIL -intPow(x, 2 * i) / factorial(2 * i);
+        >
+        BAIL intPow(x, 2 * i) / factorial(2 * i);
+    >
+    BAIL sum(sumTerm, 0);
+>
+
+THE HARD YAKKA FOR tan IS (x) <
+    BAIL sin(x) / cos(x);
+>
