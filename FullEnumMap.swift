@@ -29,12 +29,11 @@ extension FullEnumMap {
     }
 
     var debugDescription: String {
-        var result: String
+        var result = "["
         var isFirst = true
 
         for (key, value) in self {
             if isFirst {
-                result = "["
                 isFirst = false
             } else {
                 result += ", "

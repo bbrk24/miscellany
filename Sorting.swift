@@ -19,7 +19,6 @@ public func radixSort<T: UnsignedInteger>(_ arr: inout [T], radix: T, maxValue: 
     }
 }
 
-
 // Unlike some other lazy sequences, which perform the work only as needed, this prepares the
 // entire sorted section on initialization. This allows it to operate in O(m log n) time, rather
 // than O(mn).
@@ -28,7 +27,7 @@ public struct SortedPrefix<Element: Comparable>: LazySequenceProtocol {
     private var buffer: [Element]
 
     public var underestimatedCount: Int {
-        return Swift.max(maxCount, buffer.count)
+        return Swift.min(maxCount, buffer.count)
     }
 
     init(_ base: some Collection<Element>, maxCount: Int) {
@@ -56,7 +55,7 @@ public struct SortedPrefix<Element: Comparable>: LazySequenceProtocol {
             buffer = Self.partialIntroSort(
                 Array(base),
                 requiredCount: maxCount,
-                maxDepth: Int(ceil(log2(Double(baseCount))))
+                maxDepth: UInt(ceil(log2(Double(baseCount))))
             )
         }
     }
@@ -101,14 +100,14 @@ public struct SortedPrefix<Element: Comparable>: LazySequenceProtocol {
     }
 
     private static func partialIntroSort(
-        _ arr: __owned [Element],
+        _ arr: consuming [Element],
         requiredCount: Int,
-        maxDepth: Int
+        maxDepth: UInt
     ) -> [Element] {
         if requiredCount < 1 {
             return .init()
         }
-        
+
         if requiredCount == arr.count || maxDepth == 0 || arr.count <= 7 {
             // If we need the whole thing, can't recurse deeper, or sorting is trivial,
             // just sort the whole thing.
@@ -116,16 +115,15 @@ public struct SortedPrefix<Element: Comparable>: LazySequenceProtocol {
         }
 
         let pivot = arr[arr.count / 2]
-        var copy = arr
-        let pivotIndex = copy.partition { $0 > pivot }
+        let pivotIndex = arr.partition { $0 > pivot }
 
         let right = partialIntroSort(
-            Array(copy[pivotIndex...]),
+            Array(arr[pivotIndex...]),
             requiredCount: requiredCount - pivotIndex,
             maxDepth: maxDepth - 1
         )
         var left = partialIntroSort(
-            Array(copy[..<pivotIndex]),
+            Array(arr[..<pivotIndex]),
             requiredCount: Swift.min(pivotIndex, requiredCount),
             maxDepth: maxDepth - 1
         )
@@ -136,5 +134,17 @@ public struct SortedPrefix<Element: Comparable>: LazySequenceProtocol {
     public func makeIterator() -> some IteratorProtocol<Element> {
         return buffer.prefix(self.maxCount).makeIterator()
     }
+
+    public func withContiguousStorageIfAvailable<R>(_ body: (UnsafeBufferPointer<Element>) throws -> R) rethrows -> R? {
+        return try buffer.withContiguousStorageIfAvailable { ptr in
+            let abridgedPtr = UnsafeBufferPointer(start: ptr.baseAddress, count: Swift.min(ptr.count, maxCount))
+            return try body(abridgedPtr)
+        }
+    }
 }
 
+extension Collection {
+    public func sortedPrefix(maxCount: Int) -> SortedPrefix<Element> {
+        .init(self, maxCount: maxCount)
+    }
+}
