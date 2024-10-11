@@ -27,7 +27,7 @@ idForNumber := (n: number): string =>
     else if n < 2 * alphabet#
         alphabet[n - alphabet#].toUpperCase()
     else
-        idForNumber(n % (2 * alphabet#)) + idForNumber Math.ceil n / (2 * alphabet#)
+        idForNumber(Math.floor(n / (2 * alphabet#)) - 1) + idForNumber(n % (2 * alphabet#))
 
 mapping := new Map
     mostToLeast.map (el, i) => [el, idForNumber i]
