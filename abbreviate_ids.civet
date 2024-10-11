@@ -1,0 +1,41 @@
+{ readFileSync, writeFileSync } from fs
+
+IN_FILE = 'examples/99_bottles_of_beer.tqd'
+OUT_FILE = '99bob.tqd'
+
+input := readFileSync IN_FILE, encoding: 'utf8'
+
+allIDs := Array.from
+    input.matchAll /\p{Letter}+/gv
+    &.0
+
+countMap := new Map<string, number>
+for id of allIDs
+    countMap.set
+        id
+        (countMap.get(id) ?? 0) + 1
+
+mostToLeast := Array.from countMap
+    .sort (a, b) => b.1 - a.1
+    .map &.0
+
+alphabet := 'etaoinshrdlcumwfgypbvkjxqz'
+
+idForNumber := (n: number): string =>
+    if n < alphabet#
+        alphabet[n]
+    else if n < 2 * alphabet#
+        alphabet[n - alphabet#].toUpperCase()
+    else
+        idForNumber(n % (2 * alphabet#)) + idForNumber(n / (2 * alphabet#))
+
+mapping := new Map
+    mostToLeast.map (el, i) => [el, idForNumber i]
+
+output: string := input
+    .replaceAll
+        /\p{Letter}+/gv
+        (s: string) => mapping.get(s)!
+    .replaceAll /\s+/g, ' '
+
+writeFileSync OUT_FILE, output, encoding: 'utf8'
